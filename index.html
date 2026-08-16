@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>حرب المجرات</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#10151c; --panel:#171f2a; --panel-light:#1e2836; --line:#2a3646;
+    --gold:#c9a45c; --gold-dim:#8a7142; --ink:#e8e3d6; --ink-dim:#9aa5b4;
+    --danger:#c0453f; --ok:#4b8f6b;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:'Tajawal',sans-serif;height:100%;}
+  h1,h2,h3,.disp{font-family:'Cairo',sans-serif;}
+  #app{min-height:100vh;display:flex;flex-direction:column;}
+
+  .center-screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 16px;text-align:center;}
+  .brand{font-weight:900;font-size:clamp(28px,6vw,46px);letter-spacing:1px;color:var(--gold);margin:0 0 6px;}
+  .brand-sub{color:var(--ink-dim);margin:0 0 36px;font-size:15px;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px;width:100%;max-width:460px;}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--gold);color:#1b1508;border:none;border-radius:10px;padding:13px 22px;font-family:'Cairo',sans-serif;font-weight:700;font-size:15px;cursor:pointer;transition:transform .1s, background .15s;width:100%;}
+  .btn:hover{background:#dab976;}
+  .btn:active{transform:scale(.98);}
+  .btn.secondary{background:transparent;border:1px solid var(--gold-dim);color:var(--gold);}
+  .btn.secondary:hover{background:rgba(201,164,92,.1);}
+  .btn.small{width:auto;padding:8px 14px;font-size:13px;}
+  .btn.danger{background:var(--danger);color:#fff;}
+  .btn.ok{background:var(--ok);color:#fff;}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .stack{display:flex;flex-direction:column;gap:12px;margin-top:18px;}
+
+  .battle-item{background:var(--panel-light);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;text-align:right;}
+  .battle-item .meta{font-size:12px;color:var(--ink-dim);margin-top:4px;}
+  .battle-item .name{font-weight:700;font-family:'Cairo',sans-serif;}
+
+  input[type=text], input[type=number]{background:#0d1218;border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:10px 12px;font-family:'Tajawal',sans-serif;font-size:14px;width:100%;}
+  input:focus{outline:1px solid var(--gold-dim);}
+  label{font-size:13px;color:var(--ink-dim);display:block;margin-bottom:6px;}
+
+  .team-row{display:flex;gap:10px;align-items:center;margin-bottom:10px;}
+  .swatch{width:28px;height:28px;border-radius:50%;flex:0 0 28px;border:2px solid rgba(255,255,255,.25);}
+
+  #board-screen{display:flex;flex-direction:column;height:100vh;}
+  .topbar{background:var(--panel);border-bottom:1px solid var(--line);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+  .turn-pill{display:flex;align-items:center;gap:8px;font-family:'Cairo',sans-serif;font-weight:700;padding:6px 14px;border-radius:999px;background:var(--panel-light);border:1px solid var(--line);}
+  .dot{width:12px;height:12px;border-radius:50%;display:inline-block;flex:0 0 12px;}
+  .main-area{flex:1;display:flex;overflow:hidden;}
+  .map-wrap{
+    flex:1;overflow:auto;
+    background-color:#050a15; 
+    background-image: radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.2), transparent 40%),
+                      radial-gradient(circle at 85% 30%, rgba(14, 116, 144, 0.2), transparent 40%);
+    position:relative;
+  }
+  svg#map{width:100%;height:100%;min-width:900px;min-height:560px;background:#03060f;}
+  .link{stroke:rgba(255,255,255,0.08);stroke-width:1.5; pointer-events:none;}
+  .link.attackable{stroke:rgba(255,255,255,0.4);stroke-width:2.5;stroke-dasharray:4 4;}
+  .celestial-glow{fill:none;stroke-width:3;stroke-opacity:0.2;transition:all .3s;}
+  .celestial{cursor:default;transition:transform .2s, filter .2s;transform-origin:center;}
+  .celestial.mine .celestial-glow{stroke-width:5; stroke-opacity:0.8;}
+  .celestial.attackable{cursor:pointer;}
+  .celestial.attackable:hover{transform:scale(1.15);filter:brightness(1.3);}
+  .celestial.selected .celestial-glow{stroke:#fff !important;stroke-width:7;stroke-opacity:1;}
+
+  .sidebar{width:300px;flex:0 0 300px;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;overflow-y:auto;}
+  .side-sec{padding:14px 16px;border-bottom:1px solid var(--line);}
+  .side-sec h3{margin:0 0 10px;font-size:13px;color:var(--gold);letter-spacing:.5px;}
+  .team-card{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px;}
+  .team-card .name{flex:1;}
+  .team-card.current{background:rgba(201,164,92,.08);border-radius:8px;padding:6px 8px;margin:0 -8px;}
+  .team-card .stats{color:var(--ink-dim);font-size:11px;}
+  .team-card.eliminated{opacity:.4;text-decoration:line-through;}
+
+  .log{font-size:12px;color:var(--ink-dim);max-height:220px;overflow-y:auto;display:flex;flex-direction:column-reverse;gap:4px;}
+  .log div{border-right:2px solid var(--line);padding-right:8px;}
+
+  .action-panel{padding:14px 16px;}
+  .action-panel p{font-size:13px;color:var(--ink-dim);margin:0 0 10px;line-height:1.7;}
+  .btnrow{display:flex;gap:8px;flex-wrap:wrap;}
+  .flash{font-size:12px;color:var(--danger);margin-top:8px;}
+
+  .overlay{position:fixed;inset:0;background:rgba(8,10,14,.85);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px;}
+  .overlay .card{max-width:420px;text-align:center;}
+
+  @media (max-width:760px){
+    .sidebar{position:fixed;inset:0 0 0 auto;width:82vw;flex:0 0 82vw;transform:translateX(100%);transition:transform .25s;z-index:30;box-shadow:-8px 0 24px rgba(0,0,0,.4);}
+    .sidebar.open{transform:translateX(0);}
+    .map-wrap{width:100%;}
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ============================= MAP GENERATION ============================= */
+function buildWorld(){
+  const regions = {};
+  const ids = [];
+  const adj = {};
+  
+  const types = ['planet', 'planet', 'planet', 'moon', 'moon', 'star'];
+  const quadrants = [
+    {cx: 200, cy: 150}, // 0: Top-Left
+    {cx: 600, cy: 150}, // 1: Top-Right
+    {cx: 200, cy: 450}, // 2: Bottom-Left
+    {cx: 600, cy: 450}  // 3: Bottom-Right
+  ];
+  const numPerQuad = 10;
+  
+  quadrants.forEach((q, qIdx) => {
+    for(let i=0; i<numPerQuad; i++){
+      let x, y;
+      let valid = false;
+      for(let attempt=0; attempt<100; attempt++){
+        x = q.cx - 150 + Math.random()*300;
+        y = q.cy - 120 + Math.random()*240;
+        valid = true;
+        for(let j=0; j<ids.length; j++){
+          const other = regions[ids[j]];
+          if(Math.hypot(x-other.x, y-other.y) < 45) { valid = false; break; }
+        }
+        if(valid) break;
+      }
+      const t = types[Math.floor(Math.random()*types.length)];
+      const r = t==='star'? 24 + Math.random()*8 : t==='planet'? 16 + Math.random()*6 : 9 + Math.random()*4;
+      
+      const id = 'body-'+qIdx+'-'+i;
+      ids.push(id);
+      regions[id] = { id, x, y, r, type: t, quadrant: qIdx };
+      adj[id] = new Set();
+    }
+  });
+  
+  // Connect within quadrants
+  ids.forEach(id1 => {
+    const b1 = regions[id1];
+    const dists = [];
+    ids.forEach(id2 => {
+      if(id1!==id2 && regions[id2].quadrant === b1.quadrant){
+        const b2 = regions[id2];
+        dists.push({id: id2, d: Math.hypot(b1.x-b2.x, b1.y-b2.y)});
+      }
+    });
+    dists.sort((a,b)=>a.d - b.d);
+    for(let i=0; i<2; i++){
+      if(dists[i] && dists[i].d < 160){
+        adj[id1].add(dists[i].id);
+        adj[dists[i].id].add(id1);
+      }
+    }
+  });
+
+  // Cross-quadrant wormholes
+  const links = [[0,1], [0,2], [1,3], [2,3]];
+  links.forEach(([q1, q2]) => {
+    const bodies1 = ids.filter(id => regions[id].quadrant === q1);
+    const bodies2 = ids.filter(id => regions[id].quadrant === q2);
+    let best = null;
+    let minDist = Infinity;
+    bodies1.forEach(b1 => {
+      bodies2.forEach(b2 => {
+        const d = Math.hypot(regions[b1].x-regions[b2].x, regions[b1].y-regions[b2].y);
+        if(d < minDist) { minDist = d; best = [b1, b2]; }
+      });
+    });
+    if(best){
+      adj[best[0]].add(best[1]);
+      adj[best[1]].add(best[0]);
+    }
+  });
+
+  return { regions, adj, ids };
+}
+const WORLD = buildWorld();
+
+/* ============================= STORAGE ============================= */
+const INDEX_KEY = 'realm-battles-index';
+async function loadIndex(){ try{ const r=localStorage.getItem(INDEX_KEY); return r?JSON.parse(r):[]; }catch(e){ return []; } }
+async function saveIndex(list){ try{ localStorage.setItem(INDEX_KEY, JSON.stringify(list)); }catch(e){ console.error(e); } }
+async function loadBattle(id){ try{ const r=localStorage.getItem('realm-battle:'+id); return r?JSON.parse(r):null; }catch(e){ return null; } }
+async function saveBattle(state){
+  try{
+    localStorage.setItem('realm-battle:'+state.id, JSON.stringify(state));
+    let idx = await loadIndex();
+    idx = idx.filter(b=>b.id!==state.id);
+    idx.unshift({id:state.id, name:state.name, teams:state.teams.map(t=>t.name), updatedAt:Date.now(), winner:state.winner});
+    await saveIndex(idx);
+  }catch(e){ console.error(e); }
+}
+async function deleteBattle(id){
+  try{
+    localStorage.removeItem('realm-battle:'+id);
+    let idx = await loadIndex();
+    idx = idx.filter(b=>b.id!==id);
+    await saveIndex(idx);
+  }catch(e){ console.error(e); }
+}
+
+/* ============================= APP STATE ============================= */
+let VIEW='landing';
+let BATTLES_CACHE=[];
+let SETUP={ names:[{team:'', galaxy:''}, {team:'', galaxy:''}, {team:'', galaxy:''}, {team:'', galaxy:''}] };
+let GAME=null;
+let SEL={ target:null };
+let FLASH=null;
+let SIDEBAR_OPEN=false;
+
+const TEAM_COLORS=['#c0453f','#4b8f6b','#c9a45c','#4a7fb5'];
+const root=document.getElementById('app');
+function uid(){ return 'b'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+/* ============================= GAME LOGIC ============================= */
+function newGameState(name, setups){
+  const teams = setups.map((s,i)=>({
+    id:i, 
+    name:s.team||('الفريق '+(i+1)), 
+    galaxyName:s.galaxy||('مجرة '+(i+1)), 
+    color:TEAM_COLORS[i], 
+    eliminated:false
+  }));
+  const regions={};
+  WORLD.ids.forEach(id=>{
+    const r = WORLD.regions[id];
+    regions[id] = r.quadrant; 
+  });
+  return {
+    id: uid(), name: name || 'حرب المجرات العظمى',
+    teams, regions,
+    currentTeamIndex: 0,
+    log: ['بدأت المعركة! كل فريق يبدأ بمجرته الخاصة. قم بمهاجمة الكواكب في المجرات الأخرى!'],
+    winner: null,
+  };
+}
+function ownedBy(state, teamId){ return WORLD.ids.filter(id=>state.regions[id]===teamId); }
+function activeTeams(state){ return state.teams.filter(t=>!t.eliminated); }
+function checkElimination(state){ state.teams.forEach(t=>{ if(!t.eliminated && ownedBy(state,t.id).length===0) t.eliminated=true; }); }
+function checkWinner(state){ const alive=activeTeams(state); if(alive.length===1) state.winner=alive[0].id; }
+function nextTurn(state){
+  checkElimination(state); checkWinner(state);
+  if(state.winner!==null) return;
+  let idx=state.currentTeamIndex;
+  for(let i=0;i<state.teams.length;i++){
+    idx=(idx+1)%state.teams.length;
+    if(!state.teams[idx].eliminated){ state.currentTeamIndex=idx; break; }
+  }
+  SEL={target:null}; FLASH=null;
+  state.log.push('— دور ' + state.teams[state.currentTeamIndex].name + ' —');
+}
+function attackableTargets(state){
+  const cur = state.currentTeamIndex;
+  const mine = new Set(ownedBy(state, cur));
+  const targets = new Set();
+  mine.forEach(id=>{ WORLD.adj[id].forEach(nb=>{ if(state.regions[nb]!==cur) targets.add(nb); }); });
+  return targets;
+}
+
+/* ============================= RENDER HELPERS ============================= */
+function el(html){ const t=document.createElement('template'); t.innerHTML=html.trim(); return t.content.firstElementChild; }
+function render(){
+  root.innerHTML='';
+  if(VIEW==='landing') root.appendChild(renderLanding());
+  else if(VIEW==='list') root.appendChild(renderList());
+  else if(VIEW==='setup') root.appendChild(renderSetup());
+  else if(VIEW==='board') root.appendChild(renderBoard());
+}
+
+function renderLanding(){
+  const wrap=el(`<div class="center-screen">
+    <div class="brand">🚀 حرب المجرات</div>
+    <p class="brand-sub">قسّم قطاعات الفضاء بين الفرق، وتحدَّوا بعضهم للسيطرة على المجرة</p>
+    <div class="card">
+      <div class="stack">
+        <button class="btn" id="btn-continue">استكمال معركة قائمة</button>
+        <button class="btn secondary" id="btn-new">بدء معركة جديدة</button>
+      </div>
+    </div>
+  </div>`);
+  wrap.querySelector('#btn-new').onclick=()=>{ VIEW='setup'; render(); };
+  wrap.querySelector('#btn-continue').onclick=async()=>{ BATTLES_CACHE=await loadIndex(); VIEW='list'; render(); };
+  return wrap;
+}
+
+function renderList(){
+  const wrap=el(`<div class="center-screen">
+    <div class="brand" style="font-size:26px;">المعارك المحفوظة</div>
+    <div class="card" style="text-align:right;max-width:520px;">
+      <div id="list-holder"></div>
+      <div class="stack"><button class="btn secondary" id="btn-back">رجوع</button></div>
+    </div>
+  </div>`);
+  const holder=wrap.querySelector('#list-holder');
+  if(BATTLES_CACHE.length===0){
+    holder.appendChild(el(`<p style="color:var(--ink-dim);text-align:center;">لا توجد معارك محفوظة بعد.</p>`));
+  }else{
+    BATTLES_CACHE.forEach(b=>{
+      const item=el(`<div class="battle-item">
+        <div><div class="name">${b.name}${(b.winner!==null&&b.winner!==undefined)?' 🏆':''}</div>
+        <div class="meta">${b.teams.join(' · ')}</div></div>
+        <div class="btnrow">
+          <button class="btn small" data-open="${b.id}">فتح</button>
+          <button class="btn small danger" data-del="${b.id}">حذف</button>
+        </div>
+      </div>`);
+      item.querySelector('[data-open]').onclick=async()=>{
+        const g=await loadBattle(b.id);
+        if(g){ GAME=g; SEL={target:null}; VIEW='board'; render(); }
+      };
+      item.querySelector('[data-del]').onclick=async()=>{ await deleteBattle(b.id); BATTLES_CACHE=await loadIndex(); render(); };
+      holder.appendChild(item);
+    });
+  }
+  wrap.querySelector('#btn-back').onclick=()=>{ VIEW='landing'; render(); };
+  return wrap;
+}
+
+function renderSetup(){
+  const wrap=el(`<div class="center-screen">
+    <div class="brand" style="font-size:26px;">معركة المجرات الأربع</div>
+    <div class="card" style="text-align:right;max-width:540px;">
+      <label>اسم المعركة</label>
+      <input type="text" id="battle-name" placeholder="مثال: حرب النجوم الكبرى" style="margin-bottom:16px;">
+      <p style="color:var(--gold);font-size:13px;margin-bottom:10px;">أدخل بيانات الفرق الأربعة:</p>
+      <div id="team-inputs"></div>
+      <div class="stack">
+        <button class="btn" id="btn-start">ابدأ المعركة</button>
+        <button class="btn secondary" id="btn-back2">رجوع</button>
+      </div>
+    </div>
+  </div>`);
+  const teamInputs=wrap.querySelector('#team-inputs');
+  function drawTeamInputs(){
+    teamInputs.innerHTML='';
+    for(let i=0;i<4;i++){
+      const row=el(`<div class="team-row" style="flex-wrap:wrap;">
+        <span class="swatch" style="background:${TEAM_COLORS[i]}"></span>
+        <input type="text" style="flex:1;min-width:140px;" placeholder="اسم الفريق ${i+1}" value="${SETUP.names[i].team}" data-type="team">
+        <input type="text" style="flex:1;min-width:140px;" placeholder="اسم مجرته" value="${SETUP.names[i].galaxy}" data-type="galaxy">
+      </div>`);
+      row.querySelectorAll('input').forEach(inp => {
+        inp.oninput=(e)=>{ 
+          const t = e.target.getAttribute('data-type');
+          SETUP.names[i][t]=e.target.value; 
+        };
+      });
+      teamInputs.appendChild(row);
+    }
+  }
+  drawTeamInputs();
+  wrap.querySelector('#btn-back2').onclick=()=>{ VIEW='landing'; render(); };
+  wrap.querySelector('#btn-start').onclick=async()=>{
+    const battleName=wrap.querySelector('#battle-name').value.trim();
+    GAME=newGameState(battleName, SETUP.names);
+    SEL={target:null};
+    await saveBattle(GAME);
+    VIEW='board'; render();
+  };
+  return wrap;
+}
+
+function svgMap(){
+  const state=GAME;
+  const targets = state.winner===null ? attackableTargets(state) : new Set();
+  
+  let defs = `
+    <defs>
+      <radialGradient id="grad-overlay-star" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#fff" stop-opacity="0.9"/>
+        <stop offset="30%" stop-color="#fff" stop-opacity="0.4"/>
+        <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+      </radialGradient>
+      <radialGradient id="grad-overlay-planet" cx="30%" cy="30%" r="70%">
+        <stop offset="0%" stop-color="#fff" stop-opacity="0.6"/>
+        <stop offset="70%" stop-color="#000" stop-opacity="0.4"/>
+        <stop offset="100%" stop-color="#000" stop-opacity="0.9"/>
+      </radialGradient>
+    </defs>
+  `;
+  
+  let bgStars = '';
+  // Deterministic-looking stars so they don't jump around on render
+  for(let i=0; i<150; i++){
+     const sx = (Math.sin(i*123.45)*0.5+0.5)*800;
+     const sy = (Math.cos(i*321.54)*0.5+0.5)*600;
+     bgStars += `<circle cx="${sx}" cy="${sy}" r="${(i%3)*0.5+0.5}" fill="#fff" opacity="${0.1+(i%5)*0.1}"/>`;
+  }
+  
+  let links = '';
+  const drawn = new Set();
+  WORLD.ids.forEach(id1 => {
+    WORLD.adj[id1].forEach(id2 => {
+      const pair = [id1,id2].sort().join('|');
+      if(!drawn.has(pair)){
+        drawn.add(pair);
+        const b1 = WORLD.regions[id1];
+        const b2 = WORLD.regions[id2];
+        let cls = "link";
+        if( targets.has(id1) && state.regions[id2]===state.currentTeamIndex ) cls+=" attackable";
+        else if( targets.has(id2) && state.regions[id1]===state.currentTeamIndex ) cls+=" attackable";
+        links += `<line x1="${b1.x}" y1="${b1.y}" x2="${b2.x}" y2="${b2.y}" class="${cls}"/>`;
+      }
+    });
+  });
+
+  let bodies = '';
+  WORLD.ids.forEach(id=>{
+    const r=WORLD.regions[id];
+    const owner=state.regions[id];
+    const team=state.teams[owner];
+    const cls=['celestial'];
+    if(owner===state.currentTeamIndex) cls.push('mine');
+    if(targets.has(id)) cls.push('attackable');
+    if(SEL.target===id) cls.push('selected');
+    
+    const glowColor = team ? team.color : 'rgba(255,255,255,0.1)';
+    const baseColor = team ? team.color : '#555';
+    let overlayId = r.type==='star' ? 'grad-overlay-star' : 'grad-overlay-planet';
+    
+    bodies += `
+      <g class="${cls.join(' ')}" data-id="${id}" style="transform-origin: ${r.x}px ${r.y}px">
+        <circle cx="${r.x}" cy="${r.y}" r="${r.r+6}" class="celestial-glow" stroke="${glowColor}"/>
+        <circle cx="${r.x}" cy="${r.y}" r="${r.r}" fill="${baseColor}"/>
+        <circle cx="${r.x}" cy="${r.y}" r="${r.r}" fill="url(#${overlayId})" pointer-events="none"/>
+      </g>
+    `;
+  });
+
+  let galaxyLabels = '';
+  if(state.teams.length === 4){
+    const quads = [{cx:200,cy:40}, {cx:600,cy:40}, {cx:200,cy:560}, {cx:600,cy:560}];
+    quads.forEach((q, i) => {
+      const t = state.teams[i];
+      galaxyLabels += `<text x="${q.cx}" y="${q.cy}" fill="${t.color}" font-size="20" font-family="'Cairo',sans-serif" font-weight="900" text-anchor="middle" opacity="0.8" style="pointer-events:none;text-shadow:0 0 10px rgba(255,255,255,0.2);">${t.galaxyName}</text>`;
+    });
+  }
+
+  return `<svg id="map" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">${defs}${bgStars}${links}${bodies}${galaxyLabels}</svg>`;
+}
+
+function renderBoard(){
+  const state=GAME;
+  const currentTeam=state.teams[state.currentTeamIndex];
+  const wrap=el(`<div id="board-screen">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="btn small secondary" id="btn-menu">☰</button>
+        <div class="turn-pill"><span class="dot" style="background:${currentTeam?currentTeam.color:'#888'}"></span> دور: ${currentTeam?currentTeam.name:''}</div>
+      </div>
+      <div class="btnrow"><button class="btn small secondary" id="btn-save-exit">حفظ والخروج</button></div>
+    </div>
+    <div class="main-area">
+      <div class="map-wrap">${svgMap()}</div>
+      <div class="sidebar" id="sidebar"></div>
+    </div>
+  </div>`);
+
+  wrap.querySelector('#btn-menu').onclick=()=>{ SIDEBAR_OPEN=!SIDEBAR_OPEN; wrap.querySelector('#sidebar').classList.toggle('open', SIDEBAR_OPEN); };
+  wrap.querySelector('#btn-save-exit').onclick=async()=>{ await saveBattle(GAME); VIEW='landing'; render(); };
+
+  const sidebar=wrap.querySelector('#sidebar');
+  sidebar.appendChild(renderTeamsPanel(state));
+  sidebar.appendChild(renderActionPanel(state));
+  sidebar.appendChild(renderLogPanel(state));
+
+  wrap.querySelectorAll('.celestial').forEach(node=>{
+    node.addEventListener('click', ()=>{ handleRegionClick(node.getAttribute('data-id')); });
+  });
+
+  if(state.winner!==null){ wrap.appendChild(renderVictoryOverlay(state)); }
+  return wrap;
+}
+
+function renderTeamsPanel(state){
+  const box=el(`<div class="side-sec"><h3>الفرق</h3><div id="teams-list"></div></div>`);
+  const list=box.querySelector('#teams-list');
+  state.teams.forEach(t=>{
+    const owned=ownedBy(state,t.id);
+    const row=el(`<div class="team-card ${t.id===state.currentTeamIndex?'current':''} ${t.eliminated?'eliminated':''}">
+      <span class="dot" style="background:${t.color}"></span>
+      <span class="name" style="line-height:1.2;">
+        ${t.name} <br>
+        <span style="color:var(--ink-dim);font-size:10px;">${t.galaxyName}</span>
+      </span>
+      <span class="stats">${owned.length} منطقة</span>
+    </div>`);
+    list.appendChild(row);
+  });
+  return box;
+}
+
+function renderLogPanel(state){
+  const box=el(`<div class="side-sec" style="flex:1;"><h3>سجل الأحداث</h3><div class="log" id="log"></div></div>`);
+  const logDiv=box.querySelector('#log');
+  [...state.log].slice(-50).reverse().forEach(m=>logDiv.appendChild(el(`<div>${m}</div>`)));
+  return box;
+}
+
+function renderActionPanel(state){
+  const box=el(`<div class="side-sec"><h3>الإجراءات</h3><div id="action-body"></div></div>`);
+  const body=box.querySelector('#action-body');
+  const currentTeam=state.teams[state.currentTeamIndex];
+
+  if(state.winner!==null){ body.appendChild(el(`<p>انتهت المعركة.</p>`)); return box; }
+
+  const targets=attackableTargets(state);
+
+  if(!SEL.target){
+    if(targets.size===0){
+      body.appendChild(el(`<p>لا توجد مناطق مجاورة يمكن مهاجمتها حالياً.</p>`));
+    }else{
+      body.appendChild(el(`<p>اختر من الخريطة منطقة مجاورة (المضيئة) تابعة لفريق آخر لتحديها عليها.</p>`));
+    }
+    if(FLASH) body.appendChild(el(`<p class="flash">${FLASH}</p>`));
+    const skip=el(`<button class="btn secondary">تخطي دور الهجوم</button>`);
+    skip.onclick=()=>{ state.log.push(currentTeam.name+' تخطّى الهجوم هذا الدور.'); nextTurn(state); saveBattle(state); render(); };
+    body.appendChild(skip);
+  }else{
+    const defenderId=state.regions[SEL.target];
+    const defenderTeam=state.teams[defenderId];
+    body.appendChild(el(`<p><b style="color:${currentTeam.color}">${currentTeam.name}</b> يتحدى <b style="color:${defenderTeam.color}">${defenderTeam.name}</b> على منطقة. أجروا المسابقة الخارجية ثم حددوا الفائز:</p>`));
+    const winAtk=el(`<button class="btn ok">فاز ${currentTeam.name}</button>`);
+    winAtk.onclick=()=>{ resolveAttack(state, true); };
+    const winDef=el(`<button class="btn danger" style="margin-top:8px;">فاز ${defenderTeam.name}</button>`);
+    winDef.onclick=()=>{ resolveAttack(state, false); };
+    body.appendChild(winAtk); body.appendChild(winDef);
+    const cancel=el(`<button class="btn secondary" style="margin-top:8px;">إلغاء</button>`);
+    cancel.onclick=()=>{ SEL.target=null; render(); };
+    body.appendChild(cancel);
+  }
+  return box;
+}
+
+function resolveAttack(state, attackerWon){
+  const currentTeam=state.teams[state.currentTeamIndex];
+  const defenderId=state.regions[SEL.target];
+  const defenderTeam=state.teams[defenderId];
+  if(attackerWon){
+    state.regions[SEL.target]=currentTeam.id;
+    state.log.push(`🏆 استولى ${currentTeam.name} على منطقة تابعة لـ ${defenderTeam.name}`);
+  }else{
+    state.log.push(`🛡 صد ${defenderTeam.name} هجوم ${currentTeam.name} وحافظ على منطقته`);
+  }
+  SEL.target=null;
+  checkElimination(state); checkWinner(state);
+  if(state.winner===null) nextTurn(state);
+  saveBattle(state); render();
+}
+
+function handleRegionClick(id){
+  const state=GAME;
+  if(state.winner!==null) return;
+  const cur=state.currentTeamIndex;
+  if(state.regions[id]===cur) return;
+  if(SEL.target===id){ SEL.target=null; render(); return; }
+  const targets=attackableTargets(state);
+  if(!targets.has(id)){ FLASH='هذه المنطقة غير متاخمة لمناطقك، لا يمكن مهاجمتها الآن.'; render(); return; }
+  FLASH=null; SEL.target=id; render();
+}
+
+function renderVictoryOverlay(state){
+  const winner=state.teams[state.winner];
+  const overlay=el(`<div class="overlay"><div class="card">
+    <div class="brand" style="font-size:30px;">🏆 ${winner.name} فاز!</div>
+    <p style="color:var(--ink-dim);">سيطر ${winner.name} على المجرة بأكملها.</p>
+    <div class="stack"><button class="btn" id="btn-menu-home">العودة للقائمة الرئيسية</button></div>
+  </div></div>`);
+  overlay.querySelector('#btn-menu-home').onclick=()=>{ VIEW='landing'; render(); };
+  return overlay;
+}
+
+render();
+</script>
+</body>
+</html>
