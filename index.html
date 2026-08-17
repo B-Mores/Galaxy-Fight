@@ -1562,13 +1562,28 @@ function renderVictoryOverlay(state){
         ${rankRows}
       </div>
 
-      <button class="btn" id="btn-menu-home"
-        style="background:${winner.color};color:${getContrastColor(winner.color)};font-size:16px;font-family:'Cairo';font-weight:900;padding:14px 28px;">
-        العودة للقائمة
-      </button>
+      <div class="btnrow" style="gap:10px;">
+        ${BOARD_EDITABLE ? `<button class="btn secondary" id="btn-back-to-battle"
+          style="font-size:15px;font-family:'Cairo';font-weight:900;padding:14px 20px;">
+          ↩ رجوع للمعركة
+        </button>` : ''}
+        <button class="btn" id="btn-menu-home"
+          style="background:${winner.color};color:${getContrastColor(winner.color)};font-size:16px;font-family:'Cairo';font-weight:900;padding:14px 20px;">
+          العودة للقائمة
+        </button>
+      </div>
     </div>
   </div>`);
 
+  const backBtn = overlay.querySelector('#btn-back-to-battle');
+  if(backBtn){
+    backBtn.onclick = () => {
+      state.winner = null;
+      state.activeChallenge = null;
+      saveBattle(state);
+      render();
+    };
+  }
   overlay.querySelector('#btn-menu-home').onclick = () => { VIEW = BOARD_EDITABLE ? 'adminHome' : 'landing'; render(); };
   return overlay;
 }
