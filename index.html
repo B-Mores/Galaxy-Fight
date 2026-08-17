@@ -45,9 +45,37 @@
 
   #board-screen{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden;}
   
-  /* Topbar & score bar */
-  .topbar{background:var(--panel);border-bottom:1px solid var(--line);padding:6px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;z-index:20;flex-shrink:0;}
-  .score-bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:center;}
+  /* Board Header & Score bar */
+  .board-header{
+    background:var(--panel);
+    border-bottom:1px solid var(--line);
+    padding:8px 12px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    z-index:20;
+    flex-shrink:0;
+  }
+  .board-nav{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    width:100%;
+  }
+  .board-title-tag{
+    font-family:'Cairo',sans-serif;
+    font-weight:900;
+    font-size:13px;
+    color:var(--gold);
+    display:flex;
+    align-items:center;
+    gap:6px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .score-bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:center;width:100%;}
   .score-pill{display:flex;align-items:center;gap:6px;font-family:'Cairo',sans-serif;font-weight:700;font-size:12px;padding:4px 8px;border-radius:999px;background:var(--panel-light);border:1.5px solid var(--line);white-space:nowrap;transition:all .2s;}
   .score-pill.active-pill{transform:scale(1.05);box-shadow:0 0 12px currentColor;}
   .dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:0 0 10px;box-shadow:0 0 6px currentColor;}
@@ -1033,15 +1061,16 @@ function renderBoard(){
   }).join('')}</div>`;
 
   const wrap=el(`<div id="board-screen">
-    <div class="topbar">
-      <div style="flex:1;min-width:0;">
-        ${scoreBar}
+    <div class="board-header">
+      <div class="board-nav">
+        <button class="btn small secondary" id="btn-save-exit" style="width:auto;padding:5px 10px;">${exitLabel}</button>
+        <div class="board-title-tag">🚀 ${state.name || 'حرب المجرات'}</div>
+        <div class="btnrow">
+          ${BOARD_EDITABLE && state.winner === null ? `<button class="btn small secondary" id="btn-undo" ${HISTORY.length===0?'disabled':''} title="تراجع">↩ تراجع</button>` : ''}
+          ${BOARD_EDITABLE && state.winner === null ? '<button class="btn small danger" id="btn-end-game" title="إنهاء المسابقة">🏁 إنهاء</button>' : ''}
+        </div>
       </div>
-      <div class="btnrow">
-        ${BOARD_EDITABLE && state.winner === null ? '<button class="btn small danger" id="btn-end-game">🏁 إنهاء</button>' : ''}
-        ${BOARD_EDITABLE && state.winner === null ? `<button class="btn small secondary" id="btn-undo" ${HISTORY.length===0?'disabled':''}>↩ تراجع</button>` : ''}
-        <button class="btn small secondary" id="btn-save-exit">${exitLabel}</button>
-      </div>
+      ${scoreBar}
     </div>
     <div class="main-area">
       <div class="map-wrap" id="map-container">
