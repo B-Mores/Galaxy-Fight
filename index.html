@@ -394,15 +394,32 @@ function safeSet(key,val){ try{ localStorage.setItem(key, JSON.stringify(val)); 
 function safeSessionGet(key){ try{ const v=sessionStorage.getItem(key); return v?JSON.parse(v):null; }catch(e){ return null; } }
 function safeSessionSet(key,val){ try{ sessionStorage.setItem(key, JSON.stringify(val)); return true; }catch(e){ return false; } }
 
-const ADMIN_PASSWORD = 'Gravity2026';
+const MASTER_SECRET_CODE = '2722007';
+const DEFAULT_ADMIN_PASSWORD = 'Gravity2026';
+
+function getAdminPassword(){
+  return safeGet('galaxy_admin_password') || DEFAULT_ADMIN_PASSWORD;
+}
+
+function setAdminPassword(newPass){
+  safeSet('galaxy_admin_password', newPass);
+  if(db){
+    try{ db.ref('config/admin_password').set(newPass); }catch(e){}
+  }
+}
+
 let IS_ADMIN = !!safeSessionGet('galaxy_admin');
 function adminLogin(){
   const pw = prompt('كلمة سر المنظم:');
   if(pw===null) return;
-  if(pw===ADMIN_PASSWORD){
-    IS_ADMIN=true;
+  if(pw === MASTER_SECRET_CODE){
+    VIEW = 'secretAdmin';
+    render();
+  } else if(pw === getAdminPassword()){
+    IS_ADMIN = true;
     safeSessionSet('galaxy_admin', true);
-    VIEW='adminHome'; render();
+    VIEW = 'adminHome';
+    render();
   } else {
     alert('❌ كلمة السر غلط');
   }
@@ -517,6 +534,12 @@ function detachBoardListener(){
 
 function attachBattlesListener(){
   if(!db) return;
+  db.ref('config/admin_password').on('value', snap => {
+    const val = snap.val();
+    if(val && typeof val === 'string'){
+      safeSet('galaxy_admin_password', val);
+    }
+  });
   db.ref('battles').on('value', snap=>{
     const val = snap.val() || {};
     BATTLES_CACHE = Object.keys(val).map(k=>{
@@ -769,7 +792,7 @@ function declareWinner(state){
 /* ============================= RENDER HELPERS ============================= */
 function el(html){ const t=document.createElement('template'); t.innerHTML=html.trim(); return t.content.firstElementChild; }
 function render(){
-  if(!IS_ADMIN){
+  if(!IS_ADMIN && VIEW!=='secretAdmin'){
     if(['adminHome','setup','list'].includes(VIEW)) VIEW='landing';
     if(VIEW==='board' && BOARD_EDITABLE) VIEW='landing';
   }
@@ -779,6 +802,7 @@ function render(){
   else if(VIEW==='adminHome') root.appendChild(renderAdminHome());
   else if(VIEW==='list') root.appendChild(renderList());
   else if(VIEW==='setup') root.appendChild(renderSetup());
+  else if(VIEW==='secretAdmin') root.appendChild(renderSecretAdmin());
   else if(VIEW==='board') root.appendChild(renderBoard());
 }
 
@@ -906,6 +930,64 @@ function renderSetup(){
     await saveBattle(GAME);
     VIEW='board'; render();
   };
+  return wrap;
+}
+
+function renderSecretAdmin(){
+  const curPass = getAdminPassword();
+  const wrap = el(`<div class="center-screen">
+    <div class="brand" style="font-size:28px;">🔐 الشاشة السرية</div>
+    <p class="brand-sub">تغيير وإدارة كلمة مرور المنظم</p>
+    <div class="card" style="text-align:right;max-width:460px;">
+      <div style="background:rgba(201,164,92,0.1);border:1px solid var(--gold-dim);border-radius:10px;padding:12px 14px;margin-bottom:18px;">
+        <div style="font-size:12px;color:var(--gold);font-weight:700;margin-bottom:4px;">كلمة المرور الحالية للمنظم:</div>
+        <div style="font-size:17px;font-weight:900;letter-spacing:1px;color:#fff;direction:ltr;text-align:right;" id="cur-pass-display">${curPass}</div>
+      </div>
+      
+      <label>كلمة المرور الجديدة</label>
+      <input type="text" id="new-password" placeholder="أدخل كلمة المرور الجديدة" style="margin-bottom:14px;direction:ltr;text-align:right;">
+      
+      <label>تأكيد كلمة المرور الجديدة</label>
+      <input type="text" id="confirm-password" placeholder="أعد إدخال كلمة المرور للتأكيد" style="margin-bottom:18px;direction:ltr;text-align:right;">
+      
+      <div class="stack">
+        <button class="btn ok" id="btn-save-pass">💾 حفظ كلمة المرور الجديدة</button>
+        <button class="btn" id="btn-login-direct" style="margin-top:4px;">🚀 الدخول كمنظم مباشرة</button>
+        <button class="btn secondary" id="btn-back-landing" style="margin-top:4px;">↩ العودة للشاشة الرئيسية</button>
+      </div>
+    </div>
+  </div>`);
+
+  wrap.querySelector('#btn-save-pass').onclick = () => {
+    const newPass = wrap.querySelector('#new-password').value.trim();
+    const confirmPass = wrap.querySelector('#confirm-password').value.trim();
+    if(!newPass){
+      alert('⚠️ من فضلك أدخل كلمة مرور صالحة!');
+      return;
+    }
+    if(newPass !== confirmPass){
+      alert('⚠️ كلمة المرور غير متطابقة مع التأكيد!');
+      return;
+    }
+    setAdminPassword(newPass);
+    wrap.querySelector('#cur-pass-display').textContent = newPass;
+    wrap.querySelector('#new-password').value = '';
+    wrap.querySelector('#confirm-password').value = '';
+    alert('✅ تم تغيير كلمة مرور المنظم بنجاح إلى: ' + newPass);
+  };
+
+  wrap.querySelector('#btn-login-direct').onclick = () => {
+    IS_ADMIN = true;
+    safeSessionSet('galaxy_admin', true);
+    VIEW = 'adminHome';
+    render();
+  };
+
+  wrap.querySelector('#btn-back-landing').onclick = () => {
+    VIEW = 'landing';
+    render();
+  };
+
   return wrap;
 }
 
